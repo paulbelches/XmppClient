@@ -5,6 +5,7 @@ from optparse import OptionParser
 
 import sleekxmpp
 from sleekxmpp.exceptions import IqError, IqTimeout
+from sleekxmpp.xmlstream.stanzabase import ET, ElementBase
 
 class Client(sleekxmpp.ClientXMPP):
     def __init__(self, jid, password):
@@ -32,19 +33,46 @@ class Client(sleekxmpp.ClientXMPP):
     
     def removeUser(self, recipient):
         self.recipient = recipient
-        self.add_event_handler("register", self.unregister)
+        self.add_event_handler("session_start", self.unregister)
 
-    def unregister(self, iq):
+    def unregister(self, event):
         self.send_presence()
         self.get_roster()
         resp = self.Iq()
         resp['type'] = 'set'
-        resp['remove']['username'] = self.recipient
+        resp['from'] = self.jid
+        resp['id'] = 'unreg1'
+        query = "<query xmlns='jabber:iq:register'>\
+                <remove/>\
+                </query> "
+        resp.append(ET.fromstring(query))
         try:
             resp.send(now=True)
-            print("Account Remove for ", self.boundjid)
+            print("Account Remove")
         except IqError as e:
-            print("Could not unregister account")
+            print("Could not remove account")
+            self.disconnect()
+        except IqTimeout:
+            print("No response from server.")
+            self.disconnect()
+
+    def registerUser(self):  
+        self.add_event_handler("register", self.register) 
+        self.register_plugin('xep_0030') # Service Discovery
+        self.register_plugin('xep_0004') # Data forms
+        self.register_plugin('xep_0066') # Out-of-band Data
+        self.register_plugin('xep_0077') # In-band Registration 
+
+    def register(self, iq):
+        resp = self.Iq()
+        resp['type'] = 'set'
+        resp['register']['username'] = self.jid
+        resp['register']['password'] = self.password
+        try:
+            resp.send(now=True)
+            print("Account created for")
+        except IqError as e:
+            print("Could not register account " ,e.iq['error']['text'])
             self.disconnect()
         except IqTimeout:
             print("No response from server.")
@@ -57,8 +85,6 @@ user = ""
 password = ""
 client = None
 
-
-
 while(True):
     if (len(user)+len(password) == 0):
         print("|----------------------Menu----------------------|")
@@ -69,14 +95,23 @@ while(True):
         if (op == "1"):
             #user = input("Ingrese su JID: ")
             #password =  getpass.getpass(prompt='Ingrese su contraseña: ')  
-            user = "paulbelches@redes2020.xyz"
-            password = "password"
+            #user = "paulbelches@redes2020.xyz"
+            #password = "password"
+            user = "bel17088@redes2020.xyz"
+            password = "jesus"
             client = Client(user, password)
         elif (op == "2"):
-            user = input("Ingrese su usuario: ")
-            password =  getpass.getpass(prompt='Ingrese su contraseña: ')
+            #user = input("Ingrese su usuario: ")
+            #password =  getpass.getpass(prompt='Ingrese su contraseña: ')
+            user = "bel17088@redes2020.xyz"
+            password = "jesus"
             client = Client(user, password) 
-                
+            client.registerUser()
+            if client.connect():
+                client.process(block=True)
+                print("Account register")
+            else:
+                print("Unable to connect.")
     else:
         print("|----------------------Menu----------------------|")
         print("|1.  Mostrar todos los usuarios                  |")
@@ -94,20 +129,24 @@ while(True):
         print("|------------------------------------------------|")
         op = input("Ingrese la opción que desea realizar: ")
         if (op == "6"):
-            to = "theroom@redes2020.xyz"
+            to = "bel17088@redes2020.xyz"
             message="Holas"
             client.sendMessage(to, message)
             if client.connect():
                 client.process(block=True)
-                print("Done")
+                print("Message send")
             else:
                 print("Unable to connect.")
-        if (op == "13"):
+        elif (op == "13"):
+            print("13")
             to = "bel17088@redes2020.xyz"
             client.removeUser(to)
             if client.connect():
                 client.process(block=True)
-                print("Done")
+                print("Account remove")
+                break
             else:
                 print("Unable to connect.")
+        else:
+            break
     
