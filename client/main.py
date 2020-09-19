@@ -10,12 +10,83 @@ from sleekxmpp.xmlstream.stanzabase import ET, ElementBase
 class Client(sleekxmpp.ClientXMPP):
     def __init__(self, jid, password):
         sleekxmpp.ClientXMPP.__init__(self, jid, password)
+        self.register_plugin('xep_0030') # Service Discovery
+        self.register_plugin('xep_0004') # Data forms
+        self.register_plugin('xep_0066') # Out-of-band Data
+        self.register_plugin('xep_0077') # In-band Registration
+        self.register_plugin('xep_0199') # XMPP Ping
+        
+        self.add_event_handler("session_start", self.start)
+
+        if self.connect():
+            print("Sign in completed")
+            self.process(block=False)
+        else:
+            raise Exception("Unable to connect to Redes Jabber server")
 
     def start(self, event):
         self.send_presence()
         self.get_roster()
+        #print(roster)
+
+    def register(self):
+        resp = self.Iq()
+        resp['type'] = 'set'
+        resp['register']['username'] = "bel17088"
+        resp['register']['password'] = self.password
+
+        try:
+            resp.send(now=True)
+            print("Creating account")
+        except IqError as e:
+            print(e)
+            print("Could not register account ")
+            self.disconnect()
+        except IqTimeout:
+            print("No response from server.")
+            self.disconnect()
+
+        if self.connect():
+            print("Account created")
+            self.process(block=False)
+        else:
+            raise Exception("Unable to connect to Redes Jabber server")
         self.disconnect()
-        
+            
+    def unregister(self):
+        resp = self.Iq()
+        resp['type'] = 'set'
+        resp['from'] = self.jid 
+        resp['id'] = 'unreg1'
+        query = "<query xmlns='jabber:iq:register'>\
+                <remove/>\
+                </query> "
+        resp.append(ET.fromstring(query))
+        try:
+            print("Removing account.....")
+            resp.send(now=True)
+        except IqError as e:
+            print("Could not remove account")
+            self.disconnect()
+        except IqTimeout:
+            print("No response from server.")
+            self.disconnect()
+
+        if client.connect():
+            client.process(block=False)
+            print("Done")
+            #break
+        else:
+            print("Unable to connect.")
+    
+    def sendMessage(self, recipient, msg):
+        self.recipient = recipient
+        self.msg = msg
+        self.send_message(mto=self.recipient,
+                          mbody=self.msg,
+                          mtype='chat')
+
+        """
     def sendMessage(self, recipient, msg):
         self.recipient = recipient
         self.msg = msg
@@ -33,9 +104,11 @@ class Client(sleekxmpp.ClientXMPP):
     
     def removeUser(self, recipient):
         self.recipient = recipient
+        #self.unregister()
         self.add_event_handler("session_start", self.unregister)
 
-    def unregister(self, event):
+    def unregister(self):
+        print("Entre")
         self.send_presence()
         self.get_roster()
         resp = self.Iq()
@@ -47,8 +120,8 @@ class Client(sleekxmpp.ClientXMPP):
                 </query> "
         resp.append(ET.fromstring(query))
         try:
+            print("Removing account.....")
             resp.send(now=True)
-            print("Account Remove")
         except IqError as e:
             print("Could not remove account")
             self.disconnect()
@@ -58,10 +131,6 @@ class Client(sleekxmpp.ClientXMPP):
 
     def registerUser(self):  
         self.add_event_handler("register", self.register) 
-        self.register_plugin('xep_0030') # Service Discovery
-        self.register_plugin('xep_0004') # Data forms
-        self.register_plugin('xep_0066') # Out-of-band Data
-        self.register_plugin('xep_0077') # In-band Registration 
 
     def register(self, iq):
         resp = self.Iq()
@@ -77,15 +146,15 @@ class Client(sleekxmpp.ClientXMPP):
         except IqTimeout:
             print("No response from server.")
             self.disconnect()
-
+    """
 #====================================================================================0
 import getpass 
 
 user = ""
 password = ""
 client = None
-
-while(True):
+flag = True 
+while(flag):
     if (len(user)+len(password) == 0):
         print("|----------------------Menu----------------------|")
         print("|1.  Iniciar Sesión                              |")
@@ -100,18 +169,15 @@ while(True):
             user = "bel17088@redes2020.xyz"
             password = "jesus"
             client = Client(user, password)
+
         elif (op == "2"):
             #user = input("Ingrese su usuario: ")
             #password =  getpass.getpass(prompt='Ingrese su contraseña: ')
             user = "bel17088@redes2020.xyz"
             password = "jesus"
             client = Client(user, password) 
-            client.registerUser()
-            if client.connect():
-                client.process(block=True)
-                print("Account register")
-            else:
-                print("Unable to connect.")
+            client.register()
+            client = Client(user, password) 
     else:
         print("|----------------------Menu----------------------|")
         print("|1.  Mostrar todos los usuarios                  |")
@@ -138,15 +204,7 @@ while(True):
             else:
                 print("Unable to connect.")
         elif (op == "13"):
-            print("13")
-            to = "bel17088@redes2020.xyz"
-            client.removeUser(to)
-            if client.connect():
-                client.process(block=True)
-                print("Account remove")
-                break
-            else:
-                print("Unable to connect.")
+            client.unregister()
         else:
-            break
+            flag= False
     
