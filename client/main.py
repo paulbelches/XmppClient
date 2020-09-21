@@ -17,6 +17,8 @@ class Client(sleekxmpp.ClientXMPP):
         self.register_plugin('xep_0199') # XMPP Ping
         
         self.add_event_handler("session_start", self.start)
+        self.add_event_handler('message', self.incomingMessage)
+        self.add_event_handler("changed_status", self.wait_for_presences)
 
         if self.connect():
             print("Sign in completed")
@@ -26,8 +28,10 @@ class Client(sleekxmpp.ClientXMPP):
 
     def start(self, event):
         self.send_presence()
-        self.get_roster()
-        #print(roster)
+        roster = self.get_roster()
+    
+    def finish(self):
+        self.disconnect(wait=False)
 
     def register(self):
         resp = self.Iq()
@@ -59,7 +63,7 @@ class Client(sleekxmpp.ClientXMPP):
         resp['from'] = self.jid 
         resp['id'] = 'unreg1'
         query = "<query xmlns='jabber:iq:register'>\
-                <remove/>\
+                <remove/>'\
                 </query> "
         resp.append(ET.fromstring(query))
         try:
@@ -72,81 +76,40 @@ class Client(sleekxmpp.ClientXMPP):
             print("No response from server.")
             self.disconnect()
 
-        if client.connect():
-            client.process(block=False)
-            print("Done")
-            #break
+    def sendMessage(self, recipient, msg):
+        print("Sending message")
+        self.send_message(mto=recipient,  mbody=msg, mtype='chat')
+    
+    def sendGroupMessage(self, recipient, msg):
+        print("Sending message")
+        self.send_message(mto=recipient,  mbody=msg, mtype='groupchat')
+        
+    def incomingMessage(self, message):
+        print(message['from'], message['body'])
+    
+    def sendPresence(self, presence, status):
+        self.send_presence(pshow="dnd", pstatus="Wooing Juliet")
+    
+    #Change
+    def wait_for_presences(self, pres):
+        self.received.add(pres['from'].bare)
+        if len(self.received) >= len(self.client_roster.keys()):
+            self.presences_received.set()
         else:
-            print("Unable to connect.")
+            self.presences_received.clear()
     
-    def sendMessage(self, recipient, msg):
-        self.recipient = recipient
-        self.msg = msg
-        self.send_message(mto=self.recipient,
-                          mbody=self.msg,
-                          mtype='chat')
+    def contacts(self):
+        groups = self.client_roster.groups()
+        print("Lista de contactos: ")
+        for group in groups:
+            for jid in groups[group]:
+                print(jid)
+                print(self.client_roster[jid]['subscription'])
+                print(self.client_roster[jid]['name'])
+                print(self.client_roster.presence(jid))
 
-        """
-    def sendMessage(self, recipient, msg):
-        self.recipient = recipient
-        self.msg = msg
-        self.add_event_handler("session_start", self.message, threaded=True)
-
-    def message(self, event):
-        self.send_presence()
-        self.get_roster()
-        self.send_message(mto=self.recipient,
-                          mbody=self.msg,
-                          mtype='chat')
-        self.disconnect(wait=True)
-        self.register_plugin('xep_0030') # Service Discovery
-        self.register_plugin('xep_0199') # XMPP Ping
     
-    def removeUser(self, recipient):
-        self.recipient = recipient
-        #self.unregister()
-        self.add_event_handler("session_start", self.unregister)
-
-    def unregister(self):
-        print("Entre")
-        self.send_presence()
-        self.get_roster()
-        resp = self.Iq()
-        resp['type'] = 'set'
-        resp['from'] = self.jid
-        resp['id'] = 'unreg1'
-        query = "<query xmlns='jabber:iq:register'>\
-                <remove/>\
-                </query> "
-        resp.append(ET.fromstring(query))
-        try:
-            print("Removing account.....")
-            resp.send(now=True)
-        except IqError as e:
-            print("Could not remove account")
-            self.disconnect()
-        except IqTimeout:
-            print("No response from server.")
-            self.disconnect()
-
-    def registerUser(self):  
-        self.add_event_handler("register", self.register) 
-
-    def register(self, iq):
-        resp = self.Iq()
-        resp['type'] = 'set'
-        resp['register']['username'] = self.jid
-        resp['register']['password'] = self.password
-        try:
-            resp.send(now=True)
-            print("Account created for")
-        except IqError as e:
-            print("Could not register account " ,e.iq['error']['text'])
-            self.disconnect()
-        except IqTimeout:
-            print("No response from server.")
-            self.disconnect()
-    """
+   
 #====================================================================================0
 import getpass 
 
@@ -160,7 +123,8 @@ while(flag):
         print("|1.  Iniciar Sesión                              |")
         print("|2.  Registrarse                                 |")
         print("|------------------------------------------------|")
-        op = input("Ingrese la opción que desea realizar: ")
+        print("Ingrese la opción que desea realizar: ")
+        op = input()
         if (op == "1"):
             #user = input("Ingrese su JID: ")
             #password =  getpass.getpass(prompt='Ingrese su contraseña: ')  
@@ -185,7 +149,7 @@ while(flag):
         print("|4.  Agregar un usuario a los contactos          |")
         print("|5.  Mostrar detalles de contacto de un usuario  |")
         print("|6.  Mensaje Directo                             |")
-        print("|7.  Participar en conversaciones grupales       |")
+        print("|7.  Mandar un mensaje a un grupo                |")
         print("|8.  Definir mensaje de presencia                |")
         print("|9.  Enviar notificaciones                       |")
         print("|10. Recibir notificaciones                      |")
@@ -193,18 +157,22 @@ while(flag):
         print("|12. Recibir archivos                            |")
         print("|13. Remover cuenta                              |")
         print("|------------------------------------------------|")
-        op = input("Ingrese la opción que desea realizar: ")
+        print("Ingrese la opción que desea realizar: ")
+        op = input()
+        if (op == "1"):
+            client.contacts()
         if (op == "6"):
-            to = "bel17088@redes2020.xyz"
+            to = "paulbelches@redes2020.xyz"
             message="Holas"
             client.sendMessage(to, message)
-            if client.connect():
-                client.process(block=True)
-                print("Message send")
-            else:
-                print("Unable to connect.")
+        
+        if (op == "8"):
+            to = "paulbelches@redes2020.xyz"
+            message="Holas"
+            client.sendPresence(to, message)
+
         elif (op == "13"):
             client.unregister()
-        else:
+            print("done")
             flag= False
     
