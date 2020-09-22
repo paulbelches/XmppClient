@@ -1,8 +1,6 @@
 import sys
 import logging
 import getpass
-from optparse import OptionParser
-
 import sleekxmpp
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp.xmlstream.stanzabase import ET, ElementBase
@@ -17,8 +15,7 @@ class Client(sleekxmpp.ClientXMPP):
         self.register_plugin('xep_0199') # XMPP Ping
         
         self.add_event_handler("session_start", self.start)
-        self.add_event_handler('message', self.incomingMessage)
-        self.add_event_handler("changed_status", self.wait_for_presences)
+        self.add_event_handler('message', self.incomingMessage, threaded=True)
 
         if self.connect():
             print("Sign in completed")
@@ -54,7 +51,8 @@ class Client(sleekxmpp.ClientXMPP):
             print("Account created")
             self.process(block=False)
         else:
-            raise Exception("Unable to connect to Redes Jabber server")
+            pass
+            #error print
         self.disconnect()
             
     def unregister(self):
@@ -80,23 +78,14 @@ class Client(sleekxmpp.ClientXMPP):
         print("Sending message")
         self.send_message(mto=recipient,  mbody=msg, mtype='chat')
     
-    def sendGroupMessage(self, recipient, msg):
-        print("Sending message")
-        self.send_message(mto=recipient,  mbody=msg, mtype='groupchat')
-        
     def incomingMessage(self, message):
         print(message['from'], message['body'])
     
     def sendPresence(self, presence, status):
         self.send_presence(pshow="dnd", pstatus="Wooing Juliet")
     
-    #Change
-    def wait_for_presences(self, pres):
-        self.received.add(pres['from'].bare)
-        if len(self.received) >= len(self.client_roster.keys()):
-            self.presences_received.set()
-        else:
-            self.presences_received.clear()
+    def addUser(self, jid):
+        self.send_presence_subscription(pto=jid)
     
     def contacts(self):
         groups = self.client_roster.groups()
@@ -104,12 +93,15 @@ class Client(sleekxmpp.ClientXMPP):
         for group in groups:
             for jid in groups[group]:
                 print(jid)
-                print(self.client_roster[jid]['subscription'])
                 print(self.client_roster[jid]['name'])
-                print(self.client_roster.presence(jid))
-
+                print(self.client_roster.presence(jid)[0])
     
-   
+    def sendGroupMessage(self, recipient, msg):
+        print("Sending message")
+        self.send_message(mto=recipient,  mbody=msg, mtype='groupchat')
+        
+    
+
 #====================================================================================0
 import getpass 
 
@@ -161,8 +153,13 @@ while(flag):
         op = input()
         if (op == "1"):
             client.contacts()
+
+        if (op == "4"):
+            username = "davidsoto@redes2020.xyz"
+            client. addUser(username)
+
         if (op == "6"):
-            to = "paulbelches@redes2020.xyz"
+            to = "tru@redes2020.xyz"
             message="Holas"
             client.sendMessage(to, message)
         
@@ -172,6 +169,7 @@ while(flag):
             client.sendPresence(to, message)
 
         elif (op == "13"):
+            #Eliminate account
             client.unregister()
             print("done")
             flag= False
