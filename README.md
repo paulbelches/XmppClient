@@ -37,7 +37,7 @@ A Xmpp client implementation in python.
 
 ## Usage
 
-After running the programan, a menu with the current avalible options is display. Press the number of the option you wish to execute, and then enter.
+After running the programan, a menu with the current avalible options is display. Press the number of the option you wish to execute, and then enter. In case some input is required, the program will ask for it. 
 
 
 ## License
