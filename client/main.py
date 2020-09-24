@@ -1,18 +1,23 @@
 import sys
 import logging
 import getpass
+import base64
 import sleekxmpp
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp.xmlstream.stanzabase import ET, ElementBase
 
 class Client(sleekxmpp.ClientXMPP):
     def __init__(self, jid, password):
+
+        self.fileCounter = 0
+
         sleekxmpp.ClientXMPP.__init__(self, jid, password)
         self.register_plugin('xep_0030') # Service Discovery
         self.register_plugin('xep_0004') # Data forms
         self.register_plugin('xep_0066') # Out-of-band Data
         self.register_plugin('xep_0077') # In-band Registration
         self.register_plugin('xep_0199') # XMPP Ping
+        self.register_plugin('xep_0045') # Room managment
         
         #Event hadlers trigger functions when a event happens
         self.add_event_handler("session_start", self.start)
@@ -100,26 +105,16 @@ class Client(sleekxmpp.ClientXMPP):
     #Send direct message
     def sendMessage(self, recipient, msg):
         print("Sending message")
-        self.send_message(mto=recipient,  mbody=msg, mtype='chat')
-    
-    #When the event is trigger prints the recieve message
-    def incomingMessage(self, message):
-        print(message['from'], message['body'])
-    
-    """
-   o  away -- The entity or resource is temporarily away.
-
-   o  chat -- The entity or resource is actively interested in chatting.
-
-   o  dnd -- The entity or resource is busy (dnd = "Do Not Disturb").
-
-   o  xa -- The entity or resource is away for an extended period (xa =
-      "eXtended Away").
-    """
+        try:
+            self.send_message(mto=recipient,  mbody=msg, mtype="chat")
+        except IqError as e:
+            print("Unable to send image")
+        except IqTimeout:
+            print("Server not responding")
 
     #Change precense
-    def sendPresence(self, presence, status):
-        self.send_presence(pshow="dnd", pstatus="Wooing Juliet")
+    def sendPresence(self, show, status):
+        self.send_presence(pshow=show, pstatus=status)
     
     #Add user to roster
     def addUser(self, jid):
@@ -225,24 +220,66 @@ class Client(sleekxmpp.ClientXMPP):
             pass
         except IqTimeout:
             pass
-    
-    def sendGroupMessage(self, recipient, msg):
-        print("Sending message")
-        self.send_message(mto=recipient,  mbody=msg, mtype='groupchat')
 
     def joinRoom(self, roomName, name):   
         try:
             self.plugin['xep_0045'].joinMUC(roomName, name, wait=True)
         except IqError as e:
-            pass
-            #raise Exception("Unable to create room", e)
+            print("Unable to join room")
         except IqTimeout:
             pass
-            #raise Exception("Server not responding")  
+            print("Server not responding")  
+
+    def createRoom(self, roomName, name):   
+        try:
+            self.plugin['xep_0045'].joinMUC(roomName, name, wait=True)
+        except IqError as e:
+            print("Unable to join room")
+        except IqTimeout:
+            pass
+            print("Server not responding")  
+
+    #When the event is trigger prints the recieve message
+    def incomingMessage(self, message):
+        if(message['body'][:4] == "FILE"):
+            print("Entre")
+            print("File receive from " , message['from'])
+            print("File saved in ", str(self.fileCounter))
+            extension = message['body'][4:14].replace(" ", "")
+            fileBinarys = message['body'][14:]
+            ff = open(str(self.fileCounter)+"."+extension, "xb")
+            ff.write(base64.decodebytes(fileBinarys.encode('utf-8')))
+            ff.close()
+        else:
+            print(message['from'], message['body'])
+    
+    def complete(self,extension):
+        while (len(extension)<10):            
+            extension = extension + " "
+        return extension
+
+    def sendGroupMessage(self, recipient, msg):
+        print("Sending message")
+        self.send_message(mto=recipient,  mbody=msg, mtype='groupchat')
+    #Send File
+    def sendFile(self, recipient, filename, filext):
+        try: 
+            of = open(filename+"."+filext, "rb")
+            lines = base64.b64encode(of.read()).decode('utf-8')
+            extension = self.complete(filext)
+            message = "FILE"+extension+lines
+            try:
+                self.send_message(mto=recipient,  mbody=message, mtype="chat")
+            except IqError as e:
+                print("Unable to send image")
+            except IqTimeout:
+                print("Server not responding")
+        except:
+            print("Error loading file")
+   
 
 #====================================================================================0
 import getpass 
-
 user = ""
 password = ""
 client = None
@@ -256,12 +293,12 @@ while(flag):
         print("Ingrese la opción que desea realizar: ")
         op = input()
         if (op == "1"):
-            #user = input("Ingrese su JID: ")
-            #password =  getpass.getpass(prompt='Ingrese su contraseña: ')  
+            user = input("Ingrese su username: ")
+            password =  getpass.getpass(prompt='Ingrese su contraseña: ')  
             #user = "paulbelches@redes2020.xyz"
             #password = "password"
-            user = "bel17088@redes2020.xyz"
-            password = "jesus"
+            user = user + "@redes2020.xyz"
+            #password = "jesus"
             client = Client(user, password)
 
         elif (op == "2"):
@@ -274,45 +311,65 @@ while(flag):
             client = Client(user, password) 
     else:
         print("|----------------------Menu----------------------|")
-        print("|1.  Mostrar todos los usuarios                  |")
-        print("|3.  Mostrar contactos y su estado               |")
-        print("|4.  Agregar un usuario a los contactos          |")
-        print("|5.  Mostrar detalles de contacto de un usuario  |")
-        print("|6.  Mensaje Directo                             |")
-        print("|7.  Mandar un mensaje a un grupo                |")
-        print("|8.  Definir mensaje de presencia                |")
-        print("|9.  Mandar notificacion                         |")
-        print("|11. Enviar archivos                             |")
-        print("|13. Remover cuenta                              |")
+        print("|1.  Show all registered users                   |")
+        print("|2.  Show all contacts with their state          |")
+        print("|3.  Add user to roster                          |")
+        print("|4.  Show user info                              |")
+        print("|5.  Direct message                              |")
+        print("|6.  Group message                               |") #Add group validation
+        print("|7.  Define presence                             |")
+        print("|8.  Mandar notificacion                         |")
+        print("|9.  Join group                                  |")
+        print("|10. Send File                                   |")
+        print("|11. Create group                                |")
+        print("|12. Delete account                              |")
+        print("|13. Log off                                     |")
         print("|------------------------------------------------|")
-        print("Ingrese la opción que desea realizar: ")
+        print("Enter the number of the option: ")
         op = input()
-        if (op == "1"):
+        if (op == "1"): #Show all users
             client.getUsers()
-        if (op == "3"):
+        if (op == "2"): #Show all contacts 
             client.contacts()
-        if (op == "4"):
-            username = "davidsoto@redes2020.xyz"
-            client. addUser(username)
-        if (op == "5"):
-            username = "holo"
+        if (op == "3"): #Add user to roster|Add name and check if it works well
+            username  = input("Enter the username: ")
+            client.addUser(username + "@redes2020.xyz")
+        if (op == "4"): #Show user info
+            username = input("Enter the username: ")
             client.getUsersInfo(username)
-        if (op == "6"):
-            to = "tru@redes2020.xyz"
-            message="Holas"
-            client.sendMessage(to, message)
-        if (op == "8"):
-            to = "paulbelches@redes2020.xyz"
-            message="Holas"
-            client.sendPresence(to, message)
-        if (op == "9"):
+        if (op == "5"): #Send direct message
+            to = input("Enter the username: ")
+            message= input("Enter the message: ")
+            client.sendMessage(to+"@redes2020.xyz", message)
+        if (op == "6"): #Send group message
+            to = input("Enter the groupname: ")
+            message= input("Enter the message: ")
+            client.sendGroupMessage(to+"@conference.redes2020.xyz", message)
+        if (op == "7"): #Define presence
+            show = input("Enter what you wish to show (Ex. away, chat, dnd, xa): ")
+            presence = input("Enter your new presence: ")
+            client.sendPresence(show, presence)
+        if (op == "8"): #Send Notification|Not yet checked
+            username  = input("Enter the message: ")
             message="Toy por aca"
             client.sendNotification(message)
-        if (op == "10"):
-            client.finish()
-        elif (op == "13"):
+        if (op == "9"): #Join room|Not yet checked
+            roomName = input("Enter the groupname: ")
+            client.joinRoom(roomName+"@conference.redes2020.xyz", user.split('@')[0])
+        if (op == "10"): #Send file |Add validation
+            to = input("Enter the username: ")
+            filename = input("Enter file path (ex. gundam.jpeg): ")
+            fileProps = filename.split(".")
+            client.sendFile(to+"@redes2020.xyz",fileProps[0],fileProps[1])
+        if (op == "11"):
+            to = input("Ingrese su username: ")
+            #Work in progress
+        if (op == "12"):
             #Eliminate account
             client.unregister()
             print("done")
+            flag= False
+        if (op == "13"): #Log off
+            client.finish()
             flag= False
     
