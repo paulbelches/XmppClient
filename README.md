@@ -34,6 +34,9 @@ A Xmpp client implementation in python.
 13. Create group                                
 14. Delete account                              
 15. Log off
+16. Handle online notifications 
+17. Handle offline notifications 
+18. Handle change status notification
 
 ## Usage
 
