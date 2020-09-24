@@ -32,48 +32,57 @@ class Client(sleekxmpp.ClientXMPP):
         else:
             print("Could not connect")
 
+    #Handler for users going online
     #When the event is trigger prints the new online user
+    #@Event event that trigger the handdler
     def onlineNotifications(self, event):
         if (event['from'].user != self.jid.split("@")[0]):
             print(event['from'].user, " just login")
-    
+
+    #Handler for users going offline
     #When the event is trigger prints the new offline user
+    #@Event event that trigger the handdler
     def offlineNotifications(self, event):
         if (event['from'].user != self.jid.split("@")[0]):
             print(event['from'].jid, " just logout")
     
+    #Handler for users changing presence
     #When the event is trigger prints that a user has chence its presence
+    #@Event event that trigger the handdler
     def changedStatusNotifications(self, event):
         if (event['from'].user != self.jid.split("@")[0]):
             print(event['from'].jid, " just change status")
 
-    #Login
+    #Login function
+    #@Event event that trigger the handdler
     def start(self, event):
-        self.send_presence(pshow="chat", pstatus="Ready to start")
-        self.get_roster()
+        self.send_presence(pshow="chat", pstatus="Ready to start") #Establish intial presence 
     
-    #Logout
+    #Logout function
     def finish(self):
-        self.disconnect(wait=False)
+        self.disconnect(wait=False) #Disconnect clinet
 
-    #Singup
+    #Register client in server
     def register(self):
-        print("Entre")
-        resp = self.Iq()
+        resp = self.Iq() #Create iq Stanza
+        #Stanza config
         resp['type'] = 'set'
         resp['register']['username'] = self.jid.split("@")[0]
         resp['register']['password'] = self.password
         try:
-            resp.send(now=True)
+            resp.send(now=True) #Send Stanza
             print("Creating account")
+        #Error Handling
         except IqError as e:
             print(e)
             print("Could not register account ")
             self.disconnect()
+        #Time out handling Handling
         except IqTimeout:
             pprint("Server did no respond")
             self.disconnect()
 
+        #Check if conection was established
         if self.connect():
             self.process(block=False)
         else:
@@ -82,7 +91,7 @@ class Client(sleekxmpp.ClientXMPP):
         self.disconnect()
 
     #Eliminate account from server        
-    def unregister(self):
+    def unregister(self):#Create iq Stanza
         resp = self.Iq()
         resp['type'] = 'set'
         resp['from'] = self.jid 
@@ -94,14 +103,18 @@ class Client(sleekxmpp.ClientXMPP):
         try:
             print("Removing account.....")
             resp.send(now=True)
+        #Error Handling
         except IqError as e:
             print("Could not remove account")
             self.disconnect()
+        #Time out handling Handling
         except IqTimeout:
             print("Server did no respond")
             self.disconnect()
 
     #Send direct message
+    #@recipient User that is going to recive the message
+    #@msg Message that is going to be send
     def sendMessage(self, recipient, msg):
         print("Sending message")
         try:
@@ -112,25 +125,30 @@ class Client(sleekxmpp.ClientXMPP):
             print("Server did no respond")
 
     #Change precense
+    #@show Show that is going to be show
+    #@status Status that is going to be show
     def sendPresence(self, show, status):
         self.send_presence(pshow=show, pstatus=status)
     
     #Add user to roster
+    #@jid JID From the user we are going to add to rooster
     def addUser(self, jid):
         self.send_presence_subscription(pto=jid)
     
     #List all roster users
     def contacts(self):
-        groups = self.client_roster.groups()
+        groups = self.client_roster.groups() #get all roster gropus
         print("Contact list: ")
         for group in groups:
-            for jid in groups[group]:
+            for jid in groups[group]: #get all roster Jids in group
                 print('-------------------------------------------')
+                #Print JID
                 print("JID: ", jid)
                 if (len(self.client_roster[jid]['name']) > 0):
                     print("Name: ",self.client_roster[jid]['name'])
                 else: 
                     print("--- There is no name register ---")
+                #Print JID
                 presences = self.client_roster.presence(jid)
                 if (len(self.client_roster.presence(jid)) < 1):
                     print("--- There is no presence register ---")
@@ -143,6 +161,7 @@ class Client(sleekxmpp.ClientXMPP):
     
     #List all existing users in server
     def getUsers(self):
+        #Create iq Stanza
         resp = self.Iq()
         resp['type'] = 'set'
         resp['to'] = 'search.redes2020.xyz'
@@ -163,21 +182,24 @@ class Client(sleekxmpp.ClientXMPP):
                             </query>"))
         try:
             results = resp.send()
-            for i in results.findall('.//{jabber:x:data}value'):
+            # Extract info from recived stanza
+            for i in results.findall('.//{jabber:x:data}value'): 
                 if ((i.text != None) and ("@" in i.text)):
                     print(i.text)
         except IqError as e:
-            pass
+            print("Could not get users")
         except IqTimeout:
-            pass
+            print("Server did no respond")
     
     #Send notification
+    #@body Notification body
     def sendNotification(self,  body):
+        #Create meesage Stanza
         message = self.Message()
         message['type'] = 'chat'
         message['body'] = body
         message.append(ET.fromstring("<active xmlns='http://jabber.org/protocol/chatstates'/>"))
-    
+        #Get all elements in roster
         groups = self.client_roster.groups()
         for group in groups:
             for jid in groups[group]:
@@ -190,7 +212,9 @@ class Client(sleekxmpp.ClientXMPP):
                     print("Server did no respond")
 
     #Get info from user
+    #@JID from the user
     def getUsersInfo(self, jid):
+        #Create iq Stanza
         resp = self.Iq()
         resp['type'] = 'set'
         resp['to'] = 'search.redes2020.xyz'
@@ -212,6 +236,7 @@ class Client(sleekxmpp.ClientXMPP):
             </query>"))
         try:
             results = resp.send()
+            # Extract info from recived stanza
             for i in results.findall('.//{jabber:x:data}value'):
                 if (i.text != None):
                     print(i.text)
@@ -220,6 +245,9 @@ class Client(sleekxmpp.ClientXMPP):
         except IqTimeout:
             pass
 
+    #Join a room
+    #@roomName the name of the room we are going to join
+    #@name The nickname we are going to have in the group
     def joinRoom(self, roomName, name):   
         try:
             room = roomName + "@conference.redes2020.xyz"
@@ -230,6 +258,10 @@ class Client(sleekxmpp.ClientXMPP):
             pass
             print("Server did no respond")
 
+
+    #Create a room
+    #@roomName the name of the room we are going to create
+    #@name The nickname we are going to have in the group
     def createRoom(self, roomName, name):   
         try:
             room = roomName + "@conference.redes2020.xyz"
@@ -244,8 +276,11 @@ class Client(sleekxmpp.ClientXMPP):
         except IqTimeout:
             print("Server did no respond") 
 
+    #Handler for incoming messages
     #When the event is trigger prints the recieve message
+    #@Event event that trigger the handdler
     def incomingMessage(self, message):
+        #Check if it has the reciving file Flag
         if(message['body'][:4] == "FILE"):
             print("Entre")
             print("File receive from " , message['from'])
@@ -255,23 +290,33 @@ class Client(sleekxmpp.ClientXMPP):
             ff = open(str(self.fileCounter)+"."+extension, "xb")
             ff.write(base64.decodebytes(fileBinarys.encode('utf-8')))
             ff.close()
+        #If not print the received message
         else:
             print(message['from'], message['body'])
     
+    #Makes a 10 character long string
+    #@extension Original string
     def complete(self,extension):
         while (len(extension)<10):            
             extension = extension + " "
         return extension
 
+    #Send group messge
+    #@recipient Group that is going to recive the message
+    #@msg Message that is going to be send
     def sendGroupMessage(self, recipient, msg):
         print("Sending message")
         self.send_message(mto=recipient,  mbody=msg, mtype='groupchat')
+
     #Send File
     def sendFile(self, recipient, filename, filext):
         try: 
             of = open(filename+"."+filext, "rb")
             lines = base64.b64encode(of.read()).decode('utf-8')
-            extension = self.complete(filext)
+            extension = self.complete(filext)  
+            #Add flag FILE
+            #Next 10 chacters is the extension
+            #Then comes the file
             message = "FILE"+extension+lines
             try:
                 self.send_message(mto=recipient,  mbody=message, mtype="chat")
@@ -300,17 +345,12 @@ while(flag):
         if (op == "1"):
             user = input("Enter username: ")
             password =  getpass.getpass(prompt='Enter password: ')  
-            #user = "paulbelches@redes2020.xyz"
-            #password = "password"
             user = user + "@redes2020.xyz"
-            #password = "jesus"
             client = Client(user, password)
         elif (op == "2"):
             user = input("Enter username: ")
             password =  getpass.getpass(prompt='Enter password: ')  
-            #user = "bel17088@redes2020.xyz"
             user = user + "@redes2020.xyz"
-            #password = "jesus"
             client = Client(user, password) 
             client.register()
             client = Client(user, password) 
