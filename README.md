@@ -15,7 +15,7 @@ A Xmpp client implementation in python.
 
 1. Clone repo `https://github.com/paulbelches/XmppClient`<br />
 3. Run `pip install -r requirements.txt` to install dependencies.<br />
-4. Run `main.py` to start jupyter <br />
+4. Run `main.py` to start the program <br />
 
 ## Functionalities
 
@@ -42,4 +42,4 @@ After running the programan, a menu with the current avalible options is display
 
 ## License
 
-Mit License Copyright (c) 2019 Paul Belches
+Mit License Copyright (c) 2020 Paul Belches
