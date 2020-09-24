@@ -30,7 +30,7 @@ class Client(sleekxmpp.ClientXMPP):
             print("Sign in completed")
             self.process(block=False)
         else:
-            raise Exception("Unable to connect to Redes Jabber server")
+            print("Could not connect")
 
     #When the event is trigger prints the new online user
     def onlineNotifications(self, event):
@@ -71,7 +71,7 @@ class Client(sleekxmpp.ClientXMPP):
             print("Could not register account ")
             self.disconnect()
         except IqTimeout:
-            print("No response from server.")
+            pprint("Server did no respond")
             self.disconnect()
 
         if self.connect():
@@ -98,7 +98,7 @@ class Client(sleekxmpp.ClientXMPP):
             print("Could not remove account")
             self.disconnect()
         except IqTimeout:
-            print("No response from server.")
+            print("Server did no respond")
             self.disconnect()
 
     #Send direct message
@@ -107,9 +107,9 @@ class Client(sleekxmpp.ClientXMPP):
         try:
             self.send_message(mto=recipient,  mbody=msg, mtype="chat")
         except IqError as e:
-            print("Unable to send image")
+            print("Could not send message")
         except IqTimeout:
-            print("Server not responding")
+            print("Server did no respond")
 
     #Change precense
     def sendPresence(self, show, status):
@@ -187,7 +187,7 @@ class Client(sleekxmpp.ClientXMPP):
                 except IqError as e:
                     print("Could not send notification")
                 except IqTimeout:
-                    print("Server not responding")
+                    print("Server did no respond")
 
     #Get info from user
     def getUsersInfo(self, jid):
@@ -225,10 +225,10 @@ class Client(sleekxmpp.ClientXMPP):
             room = roomName + "@conference.redes2020.xyz"
             self.plugin['xep_0045'].joinMUC(room, name, wait=True)
         except IqError as e:
-            print("Unable to join room")
+            print("Could not join room")
         except IqTimeout:
             pass
-            print("Server not responding")  
+            print("Server did no respond")
 
     def createRoom(self, roomName, name):   
         try:
@@ -240,9 +240,9 @@ class Client(sleekxmpp.ClientXMPP):
             })
             self.plugin['xep_0045'].configureRoom(room, form=roomform)
         except IqError as e:
-            print("Unable to join room")
+            print("Could not create room")
         except IqTimeout:
-            print("Server not responding")  
+            print("Server did no respond") 
 
     #When the event is trigger prints the recieve message
     def incomingMessage(self, message):
@@ -276,9 +276,9 @@ class Client(sleekxmpp.ClientXMPP):
             try:
                 self.send_message(mto=recipient,  mbody=message, mtype="chat")
             except IqError as e:
-                print("Unable to send image")
+                print("Could not send file")
             except IqTimeout:
-                print("Server not responding")
+                print("Server did no respond")
         except:
             print("Error loading file")
    
@@ -323,7 +323,7 @@ while(flag):
         print("|5.  Direct message                              |")
         print("|6.  Group message                               |") #Add group validation
         print("|7.  Define presence                             |")
-        print("|8.  Send notification                         |")
+        print("|8.  Send notification                           |")
         print("|9.  Join group                                  |")
         print("|10. Send File                                   |")
         print("|11. Create group                                |")
