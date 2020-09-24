@@ -57,12 +57,12 @@ class Client(sleekxmpp.ClientXMPP):
         self.disconnect(wait=False)
 
     #Singup
-    def register(self, username):
+    def register(self):
+        print("Entre")
         resp = self.Iq()
         resp['type'] = 'set'
-        resp['register']['username'] = "bel17088"
+        resp['register']['username'] = self.jid.split("@")[0]
         resp['register']['password'] = self.password
-
         try:
             resp.send(now=True)
             print("Creating account")
@@ -75,7 +75,6 @@ class Client(sleekxmpp.ClientXMPP):
             self.disconnect()
 
         if self.connect():
-            print("Account created")
             self.process(block=False)
         else:
             pass
@@ -223,7 +222,8 @@ class Client(sleekxmpp.ClientXMPP):
 
     def joinRoom(self, roomName, name):   
         try:
-            self.plugin['xep_0045'].joinMUC(roomName, name, wait=True)
+            room = roomName + "@conference.redes2020.xyz"
+            self.plugin['xep_0045'].joinMUC(room, name, wait=True)
         except IqError as e:
             print("Unable to join room")
         except IqTimeout:
@@ -232,11 +232,16 @@ class Client(sleekxmpp.ClientXMPP):
 
     def createRoom(self, roomName, name):   
         try:
-            self.plugin['xep_0045'].joinMUC(roomName, name, wait=True)
+            room = roomName + "@conference.redes2020.xyz"
+            self.plugin['xep_0045'].joinMUC(room, name, wait=True)
+            roomform = self.plugin['xep_0045'].getRoomConfig(room)
+            roomform.set_values({
+                'muc#roomconfig_persistentroom': 1,
+            })
+            self.plugin['xep_0045'].configureRoom(room, form=roomform)
         except IqError as e:
             print("Unable to join room")
         except IqTimeout:
-            pass
             print("Server not responding")  
 
     #When the event is trigger prints the recieve message
@@ -287,27 +292,27 @@ flag = True
 while(flag):
     if (len(user)+len(password) == 0):
         print("|----------------------Menu----------------------|")
-        print("|1.  Iniciar Sesión                              |")
-        print("|2.  Registrarse                                 |")
+        print("|1.  Log in                                      |")
+        print("|2.  Sign up                                     |")
         print("|------------------------------------------------|")
-        print("Ingrese la opción que desea realizar: ")
+        print("Enter the number of the option: ")
         op = input()
         if (op == "1"):
-            user = input("Ingrese su username: ")
-            password =  getpass.getpass(prompt='Ingrese su contraseña: ')  
+            user = input("Enter username: ")
+            password =  getpass.getpass(prompt='Enter password: ')  
             #user = "paulbelches@redes2020.xyz"
             #password = "password"
             user = user + "@redes2020.xyz"
             #password = "jesus"
             client = Client(user, password)
-
         elif (op == "2"):
-            #user = input("Ingrese su usuario: ")
-            #password =  getpass.getpass(prompt='Ingrese su contraseña: ')
-            user = "bel17088@redes2020.xyz"
-            password = "jesus"
+            user = input("Enter username: ")
+            password =  getpass.getpass(prompt='Enter password: ')  
+            #user = "bel17088@redes2020.xyz"
+            user = user + "@redes2020.xyz"
+            #password = "jesus"
             client = Client(user, password) 
-            client.register(user)
+            client.register()
             client = Client(user, password) 
     else:
         print("|----------------------Menu----------------------|")
@@ -318,7 +323,7 @@ while(flag):
         print("|5.  Direct message                              |")
         print("|6.  Group message                               |") #Add group validation
         print("|7.  Define presence                             |")
-        print("|8.  Mandar notificacion                         |")
+        print("|8.  Send notification                         |")
         print("|9.  Join group                                  |")
         print("|10. Send File                                   |")
         print("|11. Create group                                |")
@@ -331,7 +336,7 @@ while(flag):
             client.getUsers()
         if (op == "2"): #Show all contacts 
             client.contacts()
-        if (op == "3"): #Add user to roster|Add name and check if it works well
+        if (op == "3"): #Add user to roster
             username  = input("Enter the username: ")
             client.addUser(username + "@redes2020.xyz")
         if (op == "4"): #Show user info
@@ -349,27 +354,26 @@ while(flag):
             show = input("Enter what you wish to show (Ex. away, chat, dnd, xa): ")
             presence = input("Enter your new presence: ")
             client.sendPresence(show, presence)
-        if (op == "8"): #Send Notification|Not yet checked
-            username  = input("Enter the message: ")
-            message="Toy por aca"
-            client.sendNotification(message)
-        if (op == "9"): #Join room|Not yet checked
+        if (op == "8"): #Send Notification
+            notification  = input("Enter the notification: ")
+            client.sendNotification(notification)
+        if (op == "9"): #Join room
             roomName = input("Enter the groupname: ")
-            client.joinRoom(roomName+"@conference.redes2020.xyz", user.split('@')[0])
-        if (op == "10"): #Send file |Add validation
+            client.joinRoom(roomName, user.split('@')[0])
+        if (op == "10"): #Send file|Add validation
             to = input("Enter the username: ")
             filename = input("Enter file path (ex. gundam.jpeg): ")
             fileProps = filename.split(".")
             client.sendFile(to+"@redes2020.xyz",fileProps[0],fileProps[1])
-        if (op == "11"):
-            to = input("Ingrese su username: ")
-            #Work in progress
-        if (op == "12"):
+        if (op == "11"): #Create room
+            roomName = input("Enter the groupname: ")
+            client.createRoom(roomName, user.split('@')[0])
+        if (op == "12"):#Unregister account
             #Eliminate account
+            flag= False
             client.unregister()
             print("done")
-            flag= False
-        if (op == "13"): #Log off
+        if (op == "13"):#Log off
             client.finish()
             flag= False
     
