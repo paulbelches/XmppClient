@@ -167,6 +167,7 @@ class Client(sleekxmpp.ClientXMPP):
         resp['to'] = 'search.redes2020.xyz'
         resp['from'] =  self.jid 
         resp['id'] = 'search_result'
+        #Service discovery stanza for getting all users
         resp.append(ET.fromstring("<query xmlns='jabber:iq:search'>\
                                  <x xmlns='jabber:x:data' type='submit'>\
                                     <field type='hidden' var='FORM_TYPE'>\
@@ -220,6 +221,7 @@ class Client(sleekxmpp.ClientXMPP):
         resp['to'] = 'search.redes2020.xyz'
         resp['from'] =  self.jid 
         resp['id'] = 'search_result'
+        #Service discovery stanza for getting a user
         resp.append(ET.fromstring(
             "<query xmlns='jabber:iq:search'>\
                 <x xmlns='jabber:x:data' type='submit'>\
