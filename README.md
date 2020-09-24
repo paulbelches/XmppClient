@@ -44,14 +44,14 @@ After running the programan, a menu with the current avalible options is display
 
 ## References
 
-https://github.com/fritzy/SleekXMPP/wiki/Event-Index
-https://github.com/fritzy/SleekXMPP/wiki/Stanzas:-Message
-https://sleekxmpp.readthedocs.io/en/latest/api/basexmpp.html
-https://gist.github.com/joelrebel/a54132c2151cd887b1d96b973a2de290
-https://xmpp.org/extensions/xep-0045.html#createroom
-https://xmpp.org/extensions/xep-0085.html
-https://gist.github.com/joelrebel/a54132c2151cd887b1d96b973a2de290
-https://xmpp.org/extensions/xep-0077.html#usecases-cancel
+* https://github.com/fritzy/SleekXMPP/wiki/Event-Index
+* https://github.com/fritzy/SleekXMPP/wiki/Stanzas:-Message
+* https://sleekxmpp.readthedocs.io/en/latest/api/basexmpp.html
+* https://gist.github.com/joelrebel/a54132c2151cd887b1d96b973a2de290
+* https://xmpp.org/extensions/xep-0045.html#createroom
+* https://xmpp.org/extensions/xep-0085.html
+* https://gist.github.com/joelrebel/a54132c2151cd887b1d96b973a2de290
+* https://xmpp.org/extensions/xep-0077.html#usecases-cancel
 
 ## License
 
