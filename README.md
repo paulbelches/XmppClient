@@ -42,6 +42,10 @@ A Xmpp client implementation in python.
 
 After running the programan, a menu with the current avalible options is display. Press the number of the option you wish to execute, and then enter. In case some input is required, the program will ask for it. 
 
+## How to send files
+
+To test the file transfer run 2 instances of the client. Then login in both of them, and choose from one of your clients option 12. Enter the file route (recomended) or use the testing image, and enter the other client username. The file will be saved in the client file location, with a number as name. 
+
 ## References
 
 * https://github.com/fritzy/SleekXMPP/wiki/Event-Index
