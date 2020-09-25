@@ -6,6 +6,14 @@ import sleekxmpp
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp.xmlstream.stanzabase import ET, ElementBase
 
+#===============================#
+#Paul Belches                   #
+#paulbelches@gmail.com          #
+#===============================#
+#Xmpp client implmentation v1.0 #
+# 24/09/20                      #
+#===============================#
+
 class Client(sleekxmpp.ClientXMPP):
     def __init__(self, jid, password):
 
@@ -404,7 +412,7 @@ while(flag):
             client.joinRoom(roomName, user.split('@')[0])
         if (op == "10"): #Send file|Add validation
             to = input("Enter the username: ")
-            filename = input("Enter file path (ex. gundam.jpeg): ")
+            filename = input("Enter file path (ex. gundam.jpeg, requirements.txt): ")
             fileProps = filename.split(".")
             client.sendFile(to+"@redes2020.xyz",fileProps[0],fileProps[1])
         if (op == "11"): #Create room
